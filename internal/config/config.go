@@ -242,6 +242,7 @@ type EncryptionConfig struct {
 	ChunkSize           int              `yaml:"chunk_size" env:"ENCRYPTION_CHUNK_SIZE"`     // Size of each encryption chunk in bytes
 	Hardware            HardwareConfig   `yaml:"hardware"`
 	KDF                 KDFConfig        `yaml:"kdf"`
+	LocalEnvelope       bool             `yaml:"local_envelope" env:"ENCRYPTION_LOCAL_ENVELOPE"`
 }
 
 // HardwareConfig holds hardware acceleration configuration.
@@ -878,6 +879,9 @@ func loadFromEnv(config *Config) {
 		if n, err := strconv.Atoi(v); err == nil && n >= 100000 {
 			config.Encryption.KDF.PBKDF2.Iterations = n
 		}
+	}
+	if v := os.Getenv("ENCRYPTION_LOCAL_ENVELOPE"); v != "" {
+		config.Encryption.LocalEnvelope = v == "true" || v == "1"
 	}
 	if v := os.Getenv("KEY_MANAGER_ENABLED"); v != "" {
 		config.Encryption.KeyManager.Enabled = v == "true" || v == "1"

@@ -460,6 +460,16 @@ func main() {
 		logger.WithFields(logrus.Fields{
 			"provider": strings.ToLower(cfg.Encryption.KeyManager.Provider),
 		}).Info("External key manager initialized")
+	} else if cfg.Encryption.LocalEnvelope {
+		// Local envelope mode: derive master key once at startup via PBKDF2,
+		// then use fast AES-256-GCM for per-object DEK wrapping/unwrapping.
+		// This avoids the ~45ms per-request PBKDF2 cost of PasswordKeyManager.
+		lem, lemErr := crypto.NewLocalEnvelopeKeyManager(activePassword, cfg.Encryption.KDF.PBKDF2.Iterations)
+		if lemErr != nil {
+			logger.WithError(lemErr).Fatal("Failed to initialize local envelope key manager")
+		}
+		keyManager = lem
+		logger.Info("Using local envelope key manager (master key derived once, AES-GCM per-object DEK wrapping)")
 	} else {
 		// Password-only mode: construct a PasswordKeyManager so that encrypted
 		// multipart uploads (EncryptMultipartUploads=true) can wrap per-upload
